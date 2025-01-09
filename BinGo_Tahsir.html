@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portuguese Number Bingo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    th, td {
+      width: 60px;
+      height: 60px;
+      border: 1px solid #000;
+      text-align: center;
+      font-size: 20px;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    td.empty {
+      background-color: #ccc;
+    }
+    td.matched {
+      background-color: green;
+      color: #fff;
+    }
+    td.completed {
+      border: 2px solid red;
+    }
+    footer {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      margin-left: -125px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 5px;
+      padding: 10px;
+      position: fixed;
+      z-index: 1;
+      left: 50%;
+      bottom: 30px;
+      font-size: 17px;
+    }
+    #toast.show {
+      visibility: visible;
+      -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+    @-webkit-keyframes fadein {
+      from {bottom: 0; opacity: 0;}
+      to {bottom: 30px; opacity: 1;}
+    }
+    @keyframes fadein {
+      from {bottom: 0; opacity: 0;}
+      to {bottom: 30px; opacity: 1;}
+    }
+    @-webkit-keyframes fadeout {
+      from {bottom: 30px; opacity: 1;}
+      to {bottom: 0; opacity: 0;}
+    }
+    @keyframes fadeout {
+      from {bottom: 30px; opacity: 1;}
+      to {bottom: 0; opacity: 0;}
+    }
+    #drawnNumbers {
+      margin-top: 20px;
+    }
+    .drawn-number {
+      display: inline-block;
+      margin: 5px;
+      padding: 10px;
+      background-color: #f4f4f4;
+      border: 1px solid #000;
+      border-radius: 5px;
+    }
+    #startGame {
+      background-color: green;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+    }
+    #drawNumber {
+      background-color: blue;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+    }
+    #startOver {
+      background-color: red;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Portuguese Number Bingo Game</h1>
+  <p>Fill in your numbers in the boxes and start the game! When you will finish the game, reload to start new game</p>
+  <table id="bingoTable">
+    <thead>
+      <tr>
+        <th>1-10</th>
+        <th>11-20</th>
+        <th>21-30</th>
+        <th>31-40</th>
+        <th>41-50</th>
+        <th>51-60</th>
+        <th>61-70</th>
+        <th>71-80</th>
+        <th>81-90</th>
+        <th>91-100</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- JavaScript will populate the table dynamically -->
+    </tbody>
+  </table>
+  <button id="startGame" >Refresh Draw</button>
+  <button id="drawNumber" >Draw Number</button>
+  <button id="startOver" >Change Bingo Card</button>
+  <div id="message" style="margin-top: 20px; font-weight: bold; color: red;"></div>
+  <div id="toast">Number Drawn: </div>
+  <div id="drawnNumbers"></div>
+  <footer>Developer: Tahsir Ahmed Munna</footer>
+
+  <script>
+    const tableBody = document.querySelector('#bingoTable tbody');
+    const messageDiv = document.getElementById('message');
+    const toast = document.getElementById('toast');
+    const drawnNumbersDiv = document.getElementById('drawnNumbers');
+    const drawButton = document.getElementById('drawNumber');
+    const startOverButton = document.getElementById('startOver');
+    const startGameButton = document.getElementById('startGame');
+    let drawnNumbers = [];
+    let startTime;
+
+    const portugueseNumbers = [
+      "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez",
+      "onze", "doze", "treze", "catorze", "quinze", "dezasseis", "dezassete", "dezoito", "dezanove", "vinte",
+      "vinte e um", "vinte e dois", "vinte e três", "vinte e quatro", "vinte e cinco", "vinte e seis", "vinte e sete", "vinte e oito", "vinte e nove", "trinta",
+      "trinta e um", "trinta e dois", "trinta e três", "trinta e quatro", "trinta e cinco", "trinta e seis", "trinta e sete", "trinta e oito", "trinta e nove", "quarenta",
+      "quarenta e um", "quarenta e dois", "quarenta e três", "quarenta e quatro", "quarenta e cinco", "quarenta e seis", "quarenta e sete", "quarenta e oito", "quarenta e nove", "cinquenta",
+      "cinquenta e um", "cinquenta e dois", "cinquenta e três", "cinquenta e quatro", "cinquenta e cinco", "cinquenta e seis", "cinquenta e sete", "cinquenta e oito", "cinquenta e nove", "sessenta",
+      "sessenta e um", "sessenta e dois", "sessenta e três", "sessenta e quatro", "sessenta e cinco", "sessenta e seis", "sessenta e sete", "sessenta e oito", "sessenta e nove", "setenta",
+      "setenta e um", "setenta e dois", "setenta e três", "setenta e quatro", "setenta e cinco", "setenta e seis", "setenta e sete", "setenta e oito", "setenta e nove", "oitenta",
+      "oitenta e um", "oitenta e dois", "oitenta e três", "oitenta e quatro", "oitenta e cinco", "oitenta e seis", "oitenta e sete", "oitenta e oito", "oitenta e nove", "noventa",
+      "noventa e um", "noventa e dois", "noventa e três", "noventa e quatro", "noventa e cinco", "noventa e seis", "noventa e sete", "noventa e oito", "noventa e nove", "cem"
+    ];
+
+    function createBingoBoard() {
+      tableBody.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const row = document.createElement('tr');
+        for (let j = 0; j < 10; j++) {
+          const cell = document.createElement('td');
+          if (Math.random() < 0.5) {
+            cell.classList.add('empty');
+          } else {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = j * 10 + 1;
+            input.max = (j + 1) * 10;
+            input.addEventListener('input', validateNumberInput);
+            cell.appendChild(input);
+          }
+          row.appendChild(cell);
+        }
+        tableBody.appendChild(row);
+      }
+    }
+
+    function validateNumberInput(event) {
+      const input = event.target;
+      const value = Number(input.value);
+      const min = Number(input.min);
+      const max = Number(input.max);
+      if (value < min || value > max || isDuplicate(value)) {
+        input.setCustomValidity(`Enter a number between ${min} and ${max}, without duplicates.`);
+        input.reportValidity();
+      } else {
+        input.setCustomValidity('');
+      }
+      updateStartGameButtonState();
+    }
+
+    function isDuplicate(value) {
+      const inputs = tableBody.querySelectorAll('input');
+      return Array.from(inputs).some(input => input !== event.target && Number(input.value) === value);
+    }
+
+    function updateStartGameButtonState() {
+      const inputs = tableBody.querySelectorAll('input');
+      const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
+      const allValid = Array.from(inputs).every(input => input.validity.valid);
+      startGameButton.disabled = !(allFilled && allValid);
+      drawButton.disabled = !allFilled || !allValid;
+      startOverButton.disabled = (allFilled || isBoardEmpty());
+    }
+
+    function startGame() {
+      if (!validateInputs()) {
+        messageDiv.textContent = 'Please fill in all the input fields before starting the game.';
+        return;
+      }
+      drawnNumbers = [];
+      drawnNumbersDiv.innerHTML = '';
+      messageDiv.textContent = '';
+      startTime = new Date();
+    }
+
+function startOver() {
+      if (!isBoardEmpty()) {
+        messageDiv.textContent = 'Cannot start over with partially filled inputs!';
+        return;
+      }
+      createBingoBoard();
+     
+    }
+
+function startOver() {
+      if (drawnNumbers.length >= 50) {
+      
+        return;
+      }
+      createBingoBoard();
+     
+    }
+
+  
+
+    function drawNumber() {
+      if (!validateInputs()) {
+        messageDiv.textContent = 'Please fill in all the input fields before drawing numbers.';
+        return;
+      }
+      if (drawnNumbers.length >= 50) {
+        showToast('All numbers drawn!');
+        return;
+      }
+
+      let number;
+      do {
+        number = Math.floor(Math.random() * 100) + 1;
+      } while (drawnNumbers.includes(number));
+
+      drawnNumbers.push(number);
+      const portugueseWord = portugueseNumbers[number - 1];
+      showToast(`Number Drawn: ${number} (${portugueseWord})`);
+
+      const numberDiv = document.createElement('div');
+      numberDiv.className = 'drawn-number';
+      numberDiv.textContent = `${number} (${portugueseWord})`;
+      drawnNumbersDiv.appendChild(numberDiv);
+
+      const allCells = document.querySelectorAll('#bingoTable td');
+      allCells.forEach(cell => {
+        const input = cell.querySelector('input');
+        if (input && Number(input.value) === number) {
+          cell.classList.add('matched');
+        }
+      });
+
+      checkWinConditions();
+    }
+
+    function validateInputs() {
+      const inputs = tableBody.querySelectorAll('input');
+      return Array.from(inputs).every(input => input.value.trim() !== '');
+    }
+
+    function isBoardEmpty() {
+      const inputs = tableBody.querySelectorAll('input');
+      return Array.from(inputs).every(input => input.value.trim() === '');
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.className = 'show';
+      setTimeout(() => {
+        toast.className = toast.className.replace('show', '');
+      }, 3000);
+    }
+
+    function checkWinConditions() {
+      const rows = tableBody.querySelectorAll('tr');
+      let allRowsComplete = true;
+
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const isRowComplete = Array.from(cells).every(cell => 
+          cell.classList.contains('matched') || cell.classList.contains('empty')
+        );
+
+        if (isRowComplete) {
+          row.classList.add('completed');
+          row.style.borderBottom = "3px solid red"; // Add red line when the row is complete
+          messageDiv.textContent = 'One Line Complete!';
+        }
+
+        allRowsComplete = allRowsComplete && isRowComplete;
+      });
+
+      if (allRowsComplete) {
+        const elapsedTime = Math.floor((new Date() - startTime) / 1000);
+        alert(`Bingo! Game Complete in ${elapsedTime} seconds.`);
+        messageDiv.textContent = 'Bingo!';
+      }
+    }
+
+    document.getElementById('startGame').addEventListener('click', startGame);
+    document.getElementById('drawNumber').addEventListener('click', drawNumber);
+    document.getElementById('startOver').addEventListener('click', startOver);
+
+    createBingoBoard();
+  </script>
+</body>
+</html>
